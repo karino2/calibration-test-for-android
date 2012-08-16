@@ -4,14 +4,14 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <DrawingCanvas
-        android:id="@+id/canvas"
-        android:layout_width="fill_parent"
-        android:layout_height="match_parent"
-        />
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/hello" />
+    <com.livejournal.karino2.calibrationtest.DrawingCanvas
+        android:id="@+id/canvas"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        />
 
 </LinearLayout>
