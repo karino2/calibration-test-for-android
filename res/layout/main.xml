@@ -5,9 +5,38 @@
     android:orientation="vertical" >
 
     <TextView
+        android:id="@+id/ExplationTV"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="@string/hello" />
+        android:text="Explain here." />
+    <LinearLayout android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        >
+        <CheckBox android:id="@+id/PositionCalibrationCheck"
+            android:text="Position"
+ 			android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+                    />
+        <CheckBox android:id="@+id/AngleCalibrationCheck"
+            android:text="Angle"
+ 			android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+        	android:enabled="false"
+                    />
+        <Button android:id="@+id/ClearButton"
+            android:text="clear"
+ 			android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+            />
+        
+        <Button android:id="@+id/CalibrationButton"
+            android:text="start"
+ 			android:layout_width="wrap_content"
+        	android:layout_height="wrap_content"
+            />
+        
+    </LinearLayout>
     <com.livejournal.karino2.calibrationtest.DrawingCanvas
         android:id="@+id/canvas"
         android:layout_width="fill_parent"
