@@ -287,111 +287,91 @@ public class DrawingCanvas extends View {
 	*/
     
     private void resultToTransform() {
-    	float[] actualBuf = new float[]{
-    			mResults.get(0), mResults.get(2), mResults.get(4),
-    			mResults.get(1), mResults.get(3), mResults.get(5),
-    			1, 1, 1
-    	};
-    	float[] targetBuf = new float[]{mCenterX, mX1, mX2,
-    			mCenterY, mY1, mY1,
-    			1, 1, 1
-    	};
-    	
-    	Matrix trans1 = createTransformMatrix(actualBuf, targetBuf);
-    	actualBuf = new float[] {
-    			mResults.get(0), mResults.get(6), mResults.get(8),
-    			mResults.get(1), mResults.get(7), mResults.get(9),
-    			1, 1, 1
-    	};
-    	targetBuf = new float[] {
-    			mCenterX, mX1, mX2,
-    			mCenterY, mY2, mY2,
-    			1, 1, 1
-    	};
-    	Matrix trans2 = createTransformMatrix(actualBuf, targetBuf);
-    	float[] vals = new float[9];
-    	float[] vals2 = new float[9];
-    	
-    	trans1.getValues(vals);
-    	trans2.getValues(vals2);
-    	for(int i = 0; i <vals.length; i++)
-    	{
-    		vals[i] = (vals[i] + vals2[i])/2f;
-    	}
-    	mTransform.setValues(vals);
-    	// mTransform.set(trans1);
-    	
-    	// target1.postConcat(tmp);
     	/*
-    	Matrix tmp2 = new Matrix();
-    	tmp2.setConcat(tmp, result1);
-    	float[] tmpBuf = new float[9];
-    	float[] tmpPts2 = new float[] {
-    			mResults.get(0), mResults.get(1),
-    			mResults.get(2), mResults.get(3),
-    	};
-    	tmp.mapPoints(tmpPts2);
-    	*/
-    	// target1.getValues(tmpBuf);
+    	 * Y
+    	 * mCenterX, mCenterY
+    	 * mX1, mY1,
+    	 * mX2, mY1,
+    	 * mX1, mY2,
+    	 * mX2, mY2
+    	 */    	
+    	/* Y'
+    	 * mCenterX, mX1, mX2, mX1, mX2
+    	 * mCenterY, mY1, mY1, mY2, mY2
+    	 */
+    	/* X'
+    	 * res(0), res(2), res(4), res(6), res(8)
+    	 * res(1), res(3), res(5), res(7), res(9)
+    	 */
+    	/*X
+    	 * res(0), res(1)
+    	 * res(2), res(3)
+    	 * res(4), res(5)
+    	 * res(6), res(7)
+    	 * res(8), res(9)
+    	 */
     	/*
-    	tmp.getValues(tmpBuf);
-    	copyBuf(tmpBuf, ptsBuf);
-    	float scaleX = FloatMath.sqrt(tmpBuf[0]*tmpBuf[0]+tmpBuf[1]*tmpBuf[1]);
-    	float scaleY = FloatMath.sqrt(tmpBuf[3]*tmpBuf[3]+tmpBuf[4]*tmpBuf[4]);
-    	mTransform.setRotate(ptsBuf[1]);
-    	mTransform.postScale(scaleX, scaleY);
-    	mTransform.postTranslate(ptsBuf[2], ptsBuf[5]);
-    	mTransform.getValues(ptsBuf);
+    	 * calculate
+    	 * Y' * X * (X' X)^-1
+    	 */
     	
-    	Matrix test = new Matrix();
-    	test.setRotate(45);
-    	test.getValues(ptsBuf);
-    	test.postScale(2, 2);
-    	test.getValues(ptsBuf);
-    	*/
-//    	mTransform.set(test);
     	
-    	// mTransform.set(target1);
+    	// calculate  X' * X
+    	float[] XX = new float[9];
+		XX[8] = 5;
+    	for(int i = 0; i < 5; i++) {
+    		XX[0] += Math.pow(mResults.get(i*2), 2);
+    		XX[1] += mResults.get(i*2)*mResults.get(i*2+1);
+    		XX[2] +=mResults.get(i*2);
+    		XX[3] += mResults.get(i*2)*mResults.get(i*2+1);
+    		XX[4] += Math.pow(mResults.get(i*2+1), 2);
+    		XX[5] += mResults.get(i*2+1);
+    		XX[6] += mResults.get(i*2);
+    		XX[7] += mResults.get(i*2+1);
+    	}
+    	
+    	float[] Ys = new float[] {
+    			mCenterX, mCenterY,
+    			mX1, mY1,
+    			mX2, mY1,
+    			mX1, mY2,
+    			mX2, mY2,
+    	};
+
     	/*
-    	float[] ptsBuf = new float[8];
-    	for(int i =0; i < 4; i++)
-    	{
-    		ptsBuf[i*2] = mResults.get(i*2);
-    		ptsBuf[i*2+1] = mResults.get(i*2+1);
-    	}
-    	float[] targetBuf = new float[]{mCenterX, mCenterY, (float)CROSS_SIZE,(float)CROSS_SIZE,
-    			(float)(mWidth-CROSS_SIZE), (float)CROSS_SIZE,
-    			(float)CROSS_SIZE, (float)(mHeight-CROSS_SIZE)
-    	};
+    	  X
+    	 * res(0), res(1)
+    	 * res(2), res(3)
+    	 * res(4), res(5)
+    	 * res(6), res(7)
+    	 * res(8), res(9)
+    	 */
     	
-    	first.setPolyToPoly(ptsBuf, 0, targetBuf, 0, 4);
+    	// calculate Y*X
+    	float[] YX = new float[9];
+    	YX[8] = 5;
+    	for(int i = 0; i < 5; i++) {
+    		YX[0] += Ys[i*2]*mResults.get(i*2);
+    		YX[1] += Ys[i*2]*mResults.get(i*2+1);
+    		YX[2] += Ys[i*2];
+    		YX[3] += Ys[i*2+1]*mResults.get(i*2);
+    		YX[4] += Ys[i*2+1]*mResults.get(i*2+1);    		
+    		YX[5] += Ys[i*2+1];
+    		YX[6] += mResults.get(i*2);
+    		YX[7] += mResults.get(i*2+1);
+    	}
     	
-    	Matrix second = new Matrix();
-		ptsBuf[0] = mResults.get(0);
-		ptsBuf[1] = mResults.get(0);
-    	for(int i =0; i < 3; i++)
-    	{
-    		ptsBuf[2+i*2] = mResults.get(4+i*2);
-    		ptsBuf[2+i*2+1] = mResults.get(4+i*2+1);
-    	}
-		
-    	targetBuf = new float[]{mCenterX, mCenterY, 
-    			(float)(mWidth-CROSS_SIZE), (float)CROSS_SIZE,
-    			(float)CROSS_SIZE, (float)(mHeight-CROSS_SIZE),
-    			(float)(mWidth-CROSS_SIZE), (float)(mHeight-CROSS_SIZE)
-    	};
-    	second.setPolyToPoly(ptsBuf, 0, targetBuf, 0, 4);
-    	float[] vals1 = new float[9];
-    	float[] vals2 = new float[9];
-    	first.getValues(vals1);
-    	second.getValues(vals2);
-    	for(int i = 0; i < vals2.length; i++)
-    	{
-    		vals2[i] = (vals2[i]+vals1[i])/2f;
-    	}
-    	// mTransform.setValues(vals2);
-    	mTransform.set(first);
-    	*/
+    	// calculate Y*X * (X' X)-1
+    	Matrix YXMat = new Matrix();
+    	YXMat.setValues(YX);
+    	
+    	Matrix XXMat = new Matrix();
+    	Matrix XXInv = new Matrix();
+    	XXMat.setValues(XX);
+    	XXMat.invert(XXInv);
+    	
+    	// YXMat * XXInv
+    	mTransform.setConcat(YXMat, XXInv);
 	}
 
 	public Matrix createTransformMatrix(float[] actualBuf, float[] targetBuf) {
