@@ -15,8 +15,13 @@ import android.view.MotionEvent;
 import android.view.View;
 
 public class DrawingCanvas extends View {
-	
-	public interface MessageListener {
+
+    public void startCalibration9() {
+        calibration = new NinePointCalibration();
+        startCalibration();
+    }
+
+    public interface MessageListener {
 		void notify(String message);
 	}
 	
@@ -29,8 +34,230 @@ public class DrawingCanvas extends View {
 		mMessageListener = listener;
 	}
 
+    interface Calibration {
+        void onDraw(Canvas canvas);
+        boolean onTouchEvent(MotionEvent event);
+        void start();
+    }
 
-    class FivePointCalibration {
+    class NinePointCalibration implements Calibration{
+        private static final int CALIBRATION_NO = 0;
+        // 0, 0
+        private static final int CALIBRATION_POS1 = 1;
+        // w/2, 0
+        private static final int CALIBRATION_POS2 = 2;
+        // w, 0
+        private static final int CALIBRATION_POS3 = 3;
+        // 0, h/2
+        private static final int CALIBRATION_POS4 = 4;
+        // w/2, h/2
+        private static final int CALIBRATION_POS5 = 5;
+
+        // w, h/2
+        private static final int CALIBRATION_POS6 = 6;
+        // 0, h
+        private static final int CALIBRATION_POS7 = 7;
+        // w/2, h
+        private static final int CALIBRATION_POS8 = 8;
+        // w, h
+        private static final int CALIBRATION_POS9 = 9;
+
+        ArrayList<Float> mResults = new ArrayList<Float>();
+
+        private int mCalibrationState = CALIBRATION_NO;
+
+        public void onDraw(Canvas canvas) {
+
+            switch(mCalibrationState)
+            {
+                case CALIBRATION_NO:
+                    break;
+                case CALIBRATION_POS1:
+                    drawCross(canvas, mX1, mY1);
+                    break;
+                case CALIBRATION_POS2:
+                    drawCross(canvas, mCenterX, mY1);
+                    break;
+                case CALIBRATION_POS3:
+                    drawCross(canvas, mX2, mY1);
+                    break;
+                case CALIBRATION_POS4:
+                    drawCross(canvas, mX1, mCenterY);
+                    break;
+                case CALIBRATION_POS5:
+                    drawCross(canvas, mCenterX, mCenterY);
+                    break;
+
+                case CALIBRATION_POS6:
+                    drawCross(canvas, mX2, mCenterY);
+                    break;
+
+                case CALIBRATION_POS7:
+                    drawCross(canvas, mX1, mY2);
+                    break;
+                case CALIBRATION_POS8:
+                    drawCross(canvas, mCenterX, mY2);
+                    break;
+                case CALIBRATION_POS9:
+                    drawCross(canvas, mX2, mY2);
+                    break;
+            }
+        }
+
+        public boolean onTouchEvent(MotionEvent event) {
+            if(mCalibrationState == CALIBRATION_NO)
+                return false;
+
+
+            float x = event.getX();
+            float y = event.getY();
+
+            if(mCalibrationState == CALIBRATION_POS1)
+                mResults.clear();
+
+            if(mCalibrationState < CALIBRATION_POS9) {
+                if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                    mCalibrationState++;
+                    mResults.add(x);
+                    mResults.add(y);
+                    invalidate();
+                }
+                return true;
+            }
+
+            if(mCalibrationState == CALIBRATION_POS9) {
+                    if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                        mCalibrationState = CALIBRATION_NO;
+                        mResults.add(x);
+                        mResults.add(y);
+                        resultToTransform();
+                        invalidate();
+                    }
+                    return true;
+            }
+            return false;
+        }
+
+        private void resultToTransform() {
+            Matrix transform = new Matrix();
+
+    	/*
+    	 * Y
+    	 * mCenterX, mCenterY
+    	 * mX1, mY1,
+    	 * mX2, mY1,
+    	 * mX1, mY2,
+    	 * mX2, mY2
+    	 */
+    	/* Y'
+    	 * mCenterX, mX1, mX2, mX1, mX2
+    	 * mCenterY, mY1, mY1, mY2, mY2
+    	 */
+    	/* X'
+    	 * res(0), res(2), res(4), res(6), res(8), res(10), res(12), res(14), res(16),
+    	 * res(1), res(3), res(5), res(7), res(9), res(11), res(13), res(15), res(17),
+    	 */
+    	/*X
+    	 * res(0), res(1)
+    	 * res(2), res(3)
+    	 * res(4), res(5)
+    	 * res(6), res(7)
+    	 * res(8), res(9)
+    	 * res(10), res(11)
+    	 * ...
+    	 */
+    	/*
+    	 * calculate
+    	 * Y' * X * (X' X)^-1
+    	 */
+
+
+            // calculate  X' * X
+            float[] XX = new float[9];
+            XX[8] = 5;
+            for(int i = 0; i < 9; i++) {
+                XX[0] += Math.pow(mResults.get(i*2), 2);
+                XX[1] += mResults.get(i*2)*mResults.get(i*2+1);
+                XX[2] +=mResults.get(i*2);
+                XX[3] += mResults.get(i*2)*mResults.get(i*2+1);
+                XX[4] += Math.pow(mResults.get(i*2+1), 2);
+                XX[5] += mResults.get(i*2+1);
+                XX[6] += mResults.get(i*2);
+                XX[7] += mResults.get(i*2+1);
+            }
+
+            /*
+                    drawCross(canvas, mX1, mY1);
+                    drawCross(canvas, mCenterX, mY1);
+                    drawCross(canvas, mX2, mY1);
+                    drawCross(canvas, mX1, mCenterY);
+                    drawCross(canvas, mCenterX, mCenterY);
+                    drawCross(canvas, mX2, mCenterY);
+                    drawCross(canvas, mX1, mY2);
+                    drawCross(canvas, mCenterX, mY2);
+                    drawCross(canvas, mX2, mY2);
+             */
+
+            float[] Ys = new float[] {
+                    mX1, mY1,
+                    mCenterX, mY1,
+                    mX2, mY1,
+                    mX1, mCenterY,
+                    mCenterX, mCenterY,
+                    mX2, mCenterY,
+                    mX1, mY2,
+                    mCenterX, mY2,
+                    mX2, mY2,
+            };
+
+    	/*
+    	  X
+    	 * res(0), res(1)
+    	 * res(2), res(3)
+    	 * res(4), res(5)
+    	 * res(6), res(7)
+    	 * res(8), res(9)
+    	 * res(10), res(11)
+    	 * res(12), res(13)
+    	 * res(14), res(15)
+    	 * res(16), res(17)
+    	 */
+
+            // calculate Y*X
+            float[] YX = new float[9];
+            YX[8] = 5;
+            for(int i = 0; i < 9; i++) {
+                YX[0] += Ys[i*2]*mResults.get(i*2);
+                YX[1] += Ys[i*2]*mResults.get(i*2+1);
+                YX[2] += Ys[i*2];
+                YX[3] += Ys[i*2+1]*mResults.get(i*2);
+                YX[4] += Ys[i*2+1]*mResults.get(i*2+1);
+                YX[5] += Ys[i*2+1];
+                YX[6] += mResults.get(i*2);
+                YX[7] += mResults.get(i*2+1);
+            }
+
+            // calculate Y*X * (X' X)-1
+            Matrix YXMat = new Matrix();
+            YXMat.setValues(YX);
+
+            Matrix XXMat = new Matrix();
+            Matrix XXInv = new Matrix();
+            XXMat.setValues(XX);
+            XXMat.invert(XXInv);
+
+            // YXMat * XXInv
+            transform.setConcat(YXMat, XXInv);
+            setNewTransform(transform);
+        }
+
+        public void start() {
+            mCalibrationState = CALIBRATION_POS1;
+        }
+    }
+
+
+    class FivePointCalibration implements Calibration {
 
         private static final int CALIBRATION_NO = 0;
         // center
@@ -56,7 +283,7 @@ public class DrawingCanvas extends View {
 
         private int mCalibrationState = CALIBRATION_NO;
 
-        void onDraw(Canvas canvas) {
+        public void onDraw(Canvas canvas) {
 
             switch(mCalibrationState)
             {
@@ -80,7 +307,7 @@ public class DrawingCanvas extends View {
             }
         }
 
-        boolean onTouchEvent(MotionEvent event) {
+        public boolean onTouchEvent(MotionEvent event) {
             float x = event.getX();
             float y = event.getY();
 
@@ -225,12 +452,12 @@ public class DrawingCanvas extends View {
             setNewTransform(transform);
         }
 
-        void start() {
+        public void start() {
             mCalibrationState = CALIBRATION_POS1;
         }
     }
 
-    FivePointCalibration calibration = new FivePointCalibration();
+    Calibration calibration = new FivePointCalibration();
 
     private Bitmap  mBitmap;
     private Canvas  mCanvas;
@@ -239,15 +466,19 @@ public class DrawingCanvas extends View {
     private Paint       mPaint;
     private Paint mCursorPaint;
 
-    public void startCalibration()
+    public void startCalibration5()
     {
-        calibration.start();
-    	invalidate();
+        calibration = new FivePointCalibration();
+        startCalibration();
     }
-    
+
+    private void startCalibration() {
+        calibration.start();
+        invalidate();
+    }
 
 
-	public DrawingCanvas(Context context, AttributeSet attrs) {
+    public DrawingCanvas(Context context, AttributeSet attrs) {
 		super(context, attrs);
         mPath = new Path();
         mBitmapPaint = new Paint(Paint.DITHER_FLAG);

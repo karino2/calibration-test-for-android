@@ -25,16 +25,22 @@ public class CalibrationTestActivity extends Activity {
 			}
 		});
         ((Button)findViewById(R.id.ClearButton)).setOnClickListener(new OnClickListener() {
-			public void onClick(View arg0) {
-	        	mDCan.resetCanvas();
-			}
+            public void onClick(View arg0) {
+                mDCan.resetCanvas();
+            }
         });
         ((Button)findViewById(R.id.CalibrationButton)).setOnClickListener(new OnClickListener() {
 			
 			public void onClick(View v) {
-				mDCan.startCalibration();
+				mDCan.startCalibration5();
 			}
 		});
+        ((Button)findViewById(R.id.start9Button)).setOnClickListener(new OnClickListener() {
+
+            public void onClick(View v) {
+                mDCan.startCalibration9();
+            }
+        });
         ((CheckBox)findViewById(R.id.PositionCalibrationCheck)).setOnCheckedChangeListener(new OnCheckedChangeListener(){
 
 			public void onCheckedChanged(CompoundButton arg0, boolean val) {
