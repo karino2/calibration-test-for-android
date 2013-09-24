@@ -232,11 +232,12 @@ public class DrawingCanvas extends View {
         
         setBrushCursorPos(x, y);
 
-        /*
         float dist = event.getAxisValue(MotionEvent.AXIS_DISTANCE);
         float orien = event.getAxisValue(MotionEvent.AXIS_ORIENTATION);
         float tilt = event.getAxisValue(MotionEvent.AXIS_TILT);
-        mMessageListener.notify("dist:" + String.valueOf(dist) + ", orient: " + String.valueOf(orien) + ", tilt: " + String.valueOf(tilt) + "," + String.valueOf(x)+","+ String.valueOf(event.getRawX())+ "," + String.valueOf(event.getOrientation()));
+        mMessageListener.notify("dist:" + String.valueOf(dist) + ", orient: " + String.valueOf(orien) + ", tilt: " + String.valueOf(tilt) + ", xy: " + String.valueOf(x)+","+ String.valueOf(event.getRawX())+ "," + String.valueOf(event.getOrientation()));
+        // mMessageListener.notify("dist:" + String.valueOf(dist) + ", orient: " + String.valueOf(orien) + ", tilt: " + String.valueOf(tilt) + "," + String.valueOf(x)+","+ String.valueOf(event.getRawX())+ "," + String.valueOf(event.getOrientation()));
+        /*
         MotionEvent.PointerCoords coords = new MotionEvent.PointerCoords();
         event.getPointerCoords(0, coords);
         InputDevice dev = event.getDevice();
