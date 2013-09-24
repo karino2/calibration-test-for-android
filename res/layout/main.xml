@@ -18,12 +18,7 @@
  			android:layout_width="wrap_content"
         	android:layout_height="wrap_content"
                     />
-        <CheckBox android:id="@+id/AngleCalibrationCheck"
-            android:text="Angle"
- 			android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:enabled="false"
-                    />
+
         <Button android:id="@+id/ClearButton"
             android:text="clear"
  			android:layout_width="wrap_content"
@@ -42,6 +37,13 @@
             android:layout_height="fill_parent"
             android:text="start9"
             android:id="@+id/start9Button" />
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:text="start25"
+            android:id="@+id/start25Button" />
 
     </LinearLayout>
     <com.livejournal.karino2.calibrationtest.DrawingCanvas

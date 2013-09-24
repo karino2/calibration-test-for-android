@@ -41,6 +41,12 @@ public class CalibrationTestActivity extends Activity {
                 mDCan.startCalibration9();
             }
         });
+        ((Button)findViewById(R.id.start25Button)).setOnClickListener(new OnClickListener() {
+
+            public void onClick(View v) {
+                mDCan.startCalibration25();
+            }
+        });
         ((CheckBox)findViewById(R.id.PositionCalibrationCheck)).setOnCheckedChangeListener(new OnCheckedChangeListener(){
 
 			public void onCheckedChanged(CompoundButton arg0, boolean val) {
