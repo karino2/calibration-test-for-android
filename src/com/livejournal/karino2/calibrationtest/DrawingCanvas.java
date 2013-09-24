@@ -29,42 +29,222 @@ public class DrawingCanvas extends View {
 		mMessageListener = listener;
 	}
 
-    private Bitmap  mBitmap;
-    private Canvas  mCanvas;
-    private Path    mPath;
-    private Paint   mBitmapPaint;
-    private Paint       mPaint;
-    private Paint mCursorPaint;
-    
-    private static final int CALIBRATION_NO = 0;
-    // center
-    private static final int CALIBRATION_POS1 = 1;
-    // 0,0
-    private static final int CALIBRATION_POS2 = 2;
-    // w, 0
-    private static final int CALIBRATION_POS3 = 3;
-    // 0, h
-    private static final int CALIBRATION_POS4 = 4;
-    // w, h
-    private static final int CALIBRATION_POS5 = 5;
-    
+
+    class FivePointCalibration {
+
+        private static final int CALIBRATION_NO = 0;
+        // center
+        private static final int CALIBRATION_POS1 = 1;
+        // 0,0
+        private static final int CALIBRATION_POS2 = 2;
+        // w, 0
+        private static final int CALIBRATION_POS3 = 3;
+        // 0, h
+        private static final int CALIBRATION_POS4 = 4;
+        // w, h
+        private static final int CALIBRATION_POS5 = 5;
+
     /*
     private static final int CALIBRATION_ANGLE_FROM_UP = 6;
     private static final int CALIBRATION_ANGLE_FROM_DOWN = 7;
     private static final int CALIBRATION_ANGLE_FROM_LEFT = 8;
     private static final int CALIBRATION_ANGLE_FROM_RIGHT = 9;
     */
-    
-    
-    private int mCalibrationState = CALIBRATION_NO;
-    
+
+
+        ArrayList<Float> mResults = new ArrayList<Float>();
+
+        private int mCalibrationState = CALIBRATION_NO;
+
+        void onDraw(Canvas canvas) {
+
+            switch(mCalibrationState)
+            {
+                case CALIBRATION_NO:
+                    break;
+                case CALIBRATION_POS1:
+                    drawCross(canvas, mCenterX, mCenterY);
+                    break;
+                case CALIBRATION_POS2:
+                    drawCross(canvas, mX1, mY1);
+                    break;
+                case CALIBRATION_POS3:
+                    drawCross(canvas, mX2, mY1);
+                    break;
+                case CALIBRATION_POS4:
+                    drawCross(canvas, mX1, mY2);
+                    break;
+                case CALIBRATION_POS5:
+                    drawCross(canvas, mX2, mY2);
+                    break;
+            }
+        }
+
+        boolean onTouchEvent(MotionEvent event) {
+            float x = event.getX();
+            float y = event.getY();
+
+            switch(mCalibrationState)
+            {
+                case CALIBRATION_POS1:
+                    if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                        mCalibrationState = CALIBRATION_POS2;
+                        mResults.clear();
+                        mResults.add(x);
+                        mResults.add(y);
+                        invalidate();
+                    }
+                    return true;
+                case CALIBRATION_POS2:
+                    if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                        mCalibrationState = CALIBRATION_POS3;
+                        mResults.add(x);
+                        mResults.add(y);
+                        invalidate();
+                    }
+                    return true;
+                case CALIBRATION_POS3:
+                    if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                        mCalibrationState = CALIBRATION_POS4;
+                        mResults.add(x);
+                        mResults.add(y);
+                        invalidate();
+                    }
+                    return true;
+                case CALIBRATION_POS4:
+                    if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                        mCalibrationState = CALIBRATION_POS5;
+                        mResults.add(x);
+                        mResults.add(y);
+                        invalidate();
+                    }
+                    return true;
+                case CALIBRATION_POS5:
+                    if (MotionEvent.ACTION_DOWN == event.getAction()) {
+                        mCalibrationState = CALIBRATION_NO;
+                        mResults.add(x);
+                        mResults.add(y);
+                        resultToTransform();
+                        invalidate();
+                    }
+                    return true;
+
+            }
+            return false;
+
+        }
+
+        private void resultToTransform() {
+            Matrix transform = new Matrix();
+
+    	/*
+    	 * Y
+    	 * mCenterX, mCenterY
+    	 * mX1, mY1,
+    	 * mX2, mY1,
+    	 * mX1, mY2,
+    	 * mX2, mY2
+    	 */
+    	/* Y'
+    	 * mCenterX, mX1, mX2, mX1, mX2
+    	 * mCenterY, mY1, mY1, mY2, mY2
+    	 */
+    	/* X'
+    	 * res(0), res(2), res(4), res(6), res(8)
+    	 * res(1), res(3), res(5), res(7), res(9)
+    	 */
+    	/*X
+    	 * res(0), res(1)
+    	 * res(2), res(3)
+    	 * res(4), res(5)
+    	 * res(6), res(7)
+    	 * res(8), res(9)
+    	 */
+    	/*
+    	 * calculate
+    	 * Y' * X * (X' X)^-1
+    	 */
+
+
+            // calculate  X' * X
+            float[] XX = new float[9];
+            XX[8] = 5;
+            for(int i = 0; i < 5; i++) {
+                XX[0] += Math.pow(mResults.get(i*2), 2);
+                XX[1] += mResults.get(i*2)*mResults.get(i*2+1);
+                XX[2] +=mResults.get(i*2);
+                XX[3] += mResults.get(i*2)*mResults.get(i*2+1);
+                XX[4] += Math.pow(mResults.get(i*2+1), 2);
+                XX[5] += mResults.get(i*2+1);
+                XX[6] += mResults.get(i*2);
+                XX[7] += mResults.get(i*2+1);
+            }
+
+            float[] Ys = new float[] {
+                    mCenterX, mCenterY,
+                    mX1, mY1,
+                    mX2, mY1,
+                    mX1, mY2,
+                    mX2, mY2,
+            };
+
+    	/*
+    	  X
+    	 * res(0), res(1)
+    	 * res(2), res(3)
+    	 * res(4), res(5)
+    	 * res(6), res(7)
+    	 * res(8), res(9)
+    	 */
+
+            // calculate Y*X
+            float[] YX = new float[9];
+            YX[8] = 5;
+            for(int i = 0; i < 5; i++) {
+                YX[0] += Ys[i*2]*mResults.get(i*2);
+                YX[1] += Ys[i*2]*mResults.get(i*2+1);
+                YX[2] += Ys[i*2];
+                YX[3] += Ys[i*2+1]*mResults.get(i*2);
+                YX[4] += Ys[i*2+1]*mResults.get(i*2+1);
+                YX[5] += Ys[i*2+1];
+                YX[6] += mResults.get(i*2);
+                YX[7] += mResults.get(i*2+1);
+            }
+
+            // calculate Y*X * (X' X)-1
+            Matrix YXMat = new Matrix();
+            YXMat.setValues(YX);
+
+            Matrix XXMat = new Matrix();
+            Matrix XXInv = new Matrix();
+            XXMat.setValues(XX);
+            XXMat.invert(XXInv);
+
+            // YXMat * XXInv
+            transform.setConcat(YXMat, XXInv);
+            setNewTransform(transform);
+        }
+
+        void start() {
+            mCalibrationState = CALIBRATION_POS1;
+        }
+    }
+
+    FivePointCalibration calibration = new FivePointCalibration();
+
+    private Bitmap  mBitmap;
+    private Canvas  mCanvas;
+    private Path    mPath;
+    private Paint   mBitmapPaint;
+    private Paint       mPaint;
+    private Paint mCursorPaint;
+
     public void startCalibration()
     {
-    	mCalibrationState = CALIBRATION_POS1;
+        calibration.start();
     	invalidate();
     }
     
-    ArrayList<Float> mResults = new ArrayList<Float>();
 
 
 	public DrawingCanvas(Context context, AttributeSet attrs) {
@@ -119,27 +299,8 @@ public class DrawingCanvas extends View {
 
         canvas.drawPath(mPath, mPaint);
         canvas.drawOval(mBrushCursorRegion, mCursorPaint);
-        
-        switch(mCalibrationState)
-        {
-        case CALIBRATION_NO:
-        	break;
-        case CALIBRATION_POS1:
-        	drawCross(canvas, mCenterX, mCenterY);
-        	break;
-        case CALIBRATION_POS2:
-        	drawCross(canvas, mX1, mY1);
-        	break;
-        case CALIBRATION_POS3:
-        	drawCross(canvas, mX2, mY1);
-        	break;
-        case CALIBRATION_POS4:
-        	drawCross(canvas, mX1, mY2);
-        	break;
-        case CALIBRATION_POS5:
-        	drawCross(canvas, mX2, mY2);
-        	break;
-        }
+
+        calibration.onDraw(canvas);
     }
     
     private final int CROSS_SIZE = 20;
@@ -165,6 +326,10 @@ public class DrawingCanvas extends View {
     
     Matrix mTransform = new Matrix();
     float[] mPointBuf = new float[2];
+
+    public void setNewTransform(Matrix transform) {
+        mTransform = transform;
+    }
     
     int mDeb = 0;
     
@@ -176,56 +341,13 @@ public class DrawingCanvas extends View {
     	if(MotionEvent.TOOL_TYPE_STYLUS != event.getToolType(0))
     		return true;
     		*/
+        if(calibration.onTouchEvent(event))
+            return true;
+
         float x = event.getX();
         float y = event.getY();
 
-        switch(mCalibrationState)
-        {
-        case CALIBRATION_POS1:
-            if (MotionEvent.ACTION_DOWN == event.getAction()) {
-            	mCalibrationState = CALIBRATION_POS2;
-            	mResults.clear();
-            	mResults.add(x);
-            	mResults.add(y);
-            	invalidate();
-            }
-        	return true;
-        case CALIBRATION_POS2:
-            if (MotionEvent.ACTION_DOWN == event.getAction()) {
-            	mCalibrationState = CALIBRATION_POS3;
-            	mResults.add(x);
-            	mResults.add(y);
-            	invalidate();
-            }
-        	return true;
-        case CALIBRATION_POS3:
-            if (MotionEvent.ACTION_DOWN == event.getAction()) {
-            	mCalibrationState = CALIBRATION_POS4;
-            	mResults.add(x);
-            	mResults.add(y);
-            	invalidate();
-            }
-        	return true;
-        case CALIBRATION_POS4:
-            if (MotionEvent.ACTION_DOWN == event.getAction()) {
-            	mCalibrationState = CALIBRATION_POS5;
-            	mResults.add(x);
-            	mResults.add(y);
-            	invalidate();
-            }
-        	return true;
-        case CALIBRATION_POS5:
-            if (MotionEvent.ACTION_DOWN == event.getAction()) {
-            	mCalibrationState = CALIBRATION_NO;
-            	mResults.add(x);
-            	mResults.add(y);
-            	resultToTransform();
-            	invalidate();
-            }
-        	return true;
-        	
-        }
-        
+
         applyCalibration(x, y);
         x = mPointBuf[0];
         y = mPointBuf[1];
@@ -286,93 +408,6 @@ public class DrawingCanvas extends View {
 	};
 	*/
     
-    private void resultToTransform() {
-    	/*
-    	 * Y
-    	 * mCenterX, mCenterY
-    	 * mX1, mY1,
-    	 * mX2, mY1,
-    	 * mX1, mY2,
-    	 * mX2, mY2
-    	 */    	
-    	/* Y'
-    	 * mCenterX, mX1, mX2, mX1, mX2
-    	 * mCenterY, mY1, mY1, mY2, mY2
-    	 */
-    	/* X'
-    	 * res(0), res(2), res(4), res(6), res(8)
-    	 * res(1), res(3), res(5), res(7), res(9)
-    	 */
-    	/*X
-    	 * res(0), res(1)
-    	 * res(2), res(3)
-    	 * res(4), res(5)
-    	 * res(6), res(7)
-    	 * res(8), res(9)
-    	 */
-    	/*
-    	 * calculate
-    	 * Y' * X * (X' X)^-1
-    	 */
-    	
-    	
-    	// calculate  X' * X
-    	float[] XX = new float[9];
-		XX[8] = 5;
-    	for(int i = 0; i < 5; i++) {
-    		XX[0] += Math.pow(mResults.get(i*2), 2);
-    		XX[1] += mResults.get(i*2)*mResults.get(i*2+1);
-    		XX[2] +=mResults.get(i*2);
-    		XX[3] += mResults.get(i*2)*mResults.get(i*2+1);
-    		XX[4] += Math.pow(mResults.get(i*2+1), 2);
-    		XX[5] += mResults.get(i*2+1);
-    		XX[6] += mResults.get(i*2);
-    		XX[7] += mResults.get(i*2+1);
-    	}
-    	
-    	float[] Ys = new float[] {
-    			mCenterX, mCenterY,
-    			mX1, mY1,
-    			mX2, mY1,
-    			mX1, mY2,
-    			mX2, mY2,
-    	};
-
-    	/*
-    	  X
-    	 * res(0), res(1)
-    	 * res(2), res(3)
-    	 * res(4), res(5)
-    	 * res(6), res(7)
-    	 * res(8), res(9)
-    	 */
-    	
-    	// calculate Y*X
-    	float[] YX = new float[9];
-    	YX[8] = 5;
-    	for(int i = 0; i < 5; i++) {
-    		YX[0] += Ys[i*2]*mResults.get(i*2);
-    		YX[1] += Ys[i*2]*mResults.get(i*2+1);
-    		YX[2] += Ys[i*2];
-    		YX[3] += Ys[i*2+1]*mResults.get(i*2);
-    		YX[4] += Ys[i*2+1]*mResults.get(i*2+1);    		
-    		YX[5] += Ys[i*2+1];
-    		YX[6] += mResults.get(i*2);
-    		YX[7] += mResults.get(i*2+1);
-    	}
-    	
-    	// calculate Y*X * (X' X)-1
-    	Matrix YXMat = new Matrix();
-    	YXMat.setValues(YX);
-    	
-    	Matrix XXMat = new Matrix();
-    	Matrix XXInv = new Matrix();
-    	XXMat.setValues(XX);
-    	XXMat.invert(XXInv);
-    	
-    	// YXMat * XXInv
-    	mTransform.setConcat(YXMat, XXInv);
-	}
 
 	public Matrix createTransformMatrix(float[] actualBuf, float[] targetBuf) {
 		Matrix result1 = new Matrix();
